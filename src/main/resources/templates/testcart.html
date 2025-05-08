@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout.html}">
+<div layout:fragment="content">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Giỏ hàng</title>
+
+
+        <style>
+            .cart-calculator-wrapper {
+                display: flex;
+                justify-content: flex-end; /* Căn nút sang bên phải */
+                margin-top: 20px; /* Khoảng cách từ dưới bảng đến nút */
+            }
+            .remove-btn {
+                border: none;
+                background: none;
+                cursor: pointer;
+                font-size: 18px; /* Kích thước icon */
+            }
+            .quantity {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .qty-btn {
+                border: none; /* Loại bỏ đường viền */
+                background: none; /* Loại bỏ nền */
+                font-size: 18px; /* Kích thước chữ */
+                padding: 0 10px; /* Khoảng cách chữ */
+                cursor: pointer;
+                color: #333; /* Màu chữ */
+            }
+
+            .qty-btn:focus {
+                outline: none; /* Loại bỏ viền khi nhấn nút */
+            }
+
+            .qty-btn:hover {
+                color: #e60000; /* Màu đỏ khi di chuột vào */
+            }
+
+            .quantity-input {
+                width: 50px;
+                height: 30px;
+                text-align: center;
+                border: 1px solid #ccc; /* Viền của ô nhập */
+                margin: 0 5px; /* Khoảng cách hai bên */
+            }
+
+            /* Cách định dạng thông báo xóa sản phẩm thành công */
+            #remove-success-alert {
+                display: none; /* Ẩn thông báo mặc định */
+                background-color: #4CAF50; /* Màu nền xanh khi thành công */
+                color: white; /* Màu chữ trắng */
+                padding: 10px;
+                border-radius: 5px;
+                margin-top: 20px;
+                text-align: center;
+                font-size: 16px;
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 1000;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Thêm bóng đổ cho thông báo */
+                max-width: 380px; /* Giới hạn chiều rộng của thông báo */
+                width: 100%;
+            }
+
+
+        </style>
+    </head>
+    <body>
+    <!-- Thông báo xóa sản phẩm thành công -->
+    <div id="remove-success-alert" class="alert alert-success">
+        Sản phẩm đã được xóa khỏi giỏ hàng thành công!
+    </div>
+
+    <!-- cart main wrapper start -->
+    <div class="cart-main-wrapper mt-4">
+        <div class="container">
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <!-- Cart Table Area -->
+                    <div class="cart-table table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                            <tr>
+                                <th class="pro-thumbnail">Hình ảnh</th>
+                                <th class="pro-title">Tên sản phẩm</th>
+                                <th class="pro-price">Giá</th>
+                                <th class="pro-quantity">Số lượng</th>
+                                <th class="pro-subtotal">Thành tiền</th>
+                                <th class="pro-remove"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- Lặp qua danh sách sản phẩm trong giỏ hàng -->
+                            <tr th:each="product : ${products}">
+                                <td class="pro-thumbnail">
+                                    <input type="text" hidden="hidden" class="productId" th:value="${product.productID}">
+                                    <a href="#"><img class="img-fluid" th:src="${product.detail.images[0]?.imageUrl}" alt="Product"/></a>
+                                </td>
+                                <td class="pro-title">
+                                    <a th:href="@{/product/{id}(id=${product.getProductID()})}" th:text="${product.getName()}">Product Name</a>
+                                </td>
+                                <td class="pro-price">
+                                    <span th:text="${product.getPrice()} + ''">Price</span>
+                                </td>
+                                <td>
+                                    <div class="quantity">
+                                        <button class="qty-btn minus">-</button>
+                                        <input type="text" value="1" min="1" class="quantity-input" readonly>
+                                        <button class="qty-btn plus">+</button>
+                                    </div>
+                                </td>
+                                <td class="pro-subtotal">
+                                    <span th:text="${product.getPrice() * 1} + ''">Total</span>
+                                </td>
+                                <td class="pro-remove">
+                                    <a th:href="@{/cart/remove/{id}(id=${product.productID})}">
+                                        Xóa
+                                    </a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Cart Update Option -->
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-5 ml-auto">
+                    <!-- Cart Calculation Area -->
+                    <div class="cart-calculator-wrapper mb-4" style="background-color: white">
+                        <button onclick="proceedToCheckout()" class="sqr-btn d-block">Mua Hàng</button>
+                        <!--                    <a href="/checkout" >Proceed To Checkout</a>-->
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- cart main wrapper end -->
+    </body>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = localStorage.getItem("jwtToken"); // Lấy token từ localStorage
+
+            // Gọi API để lấy danh sách sản phẩm trong giỏ hàng
+            fetch("/api/cart/products", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`, // Thêm token vào header
+                    "Content-Type": "application/json",
+                },
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch products");
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    renderCartProducts(data); // Render danh sách sản phẩm
+                })
+                .catch((error) => {
+                    console.error("Error loading products:", error);
+                });
+        });
+
+        function renderCartProducts(products) {
+            const tbody = document.querySelector("tbody");
+            tbody.innerHTML = ""; // Xóa nội dung cũ trong bảng
+
+            products.forEach((product) => {
+                // Định dạng giá tiền (không có chữ VND)
+                const formattedPrice = product.price.toLocaleString('vi-VN');
+                const formattedTotal = (product.price * 1).toLocaleString('vi-VN');
+
+                const row = `
+        <tr data-product-id="${product.productID}">
+            <td class="pro-thumbnail">
+                <a href="/product/${product.productID}"><img class="img-fluid" src="${product.imageUrl}" alt="Product"/></a>
+            </td>
+            <td class="pro-title">
+                <a href="/product/${product.productID}">${product.name}</a>
+            </td>
+            <td class="pro-price">
+                <span>${product.price}</span>
+            </td>
+            <td>
+                <div class="quantity">
+                    <button class="qty-btn minus">-</button>
+                    <input type="text" value="1" min="1" class="quantity-input" readonly>
+                    <button class="qty-btn plus">+</button>
+                </div>
+            </td>
+            <td class="pro-subtotal">
+                <span>${product.price * 1}</span>
+            </td>
+            <td class="pro-remove">
+                <button class="remove-btn" data-product-id="${product.productID}">
+                 <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+        `;
+                tbody.insertAdjacentHTML("beforeend", row);
+            });
+
+            attachEventHandlers(); // Gọi hàm để gán sự kiện
+        }
+
+        function attachEventHandlers() {
+            // Hàm định dạng tiền tệ với dấu phân cách hàng nghìn theo chuẩn Việt Nam
+            function formatCurrency(value) {
+                return value.toLocaleString('vi-VN');  // Sử dụng định dạng tiền tệ Việt Nam
+            }
+
+            // Sự kiện cho nút tăng
+            document.querySelectorAll('.qty-btn.plus').forEach(button => {
+                button.addEventListener('click', function () {
+                    const row = this.closest('tr'); // Lấy hàng của sản phẩm
+                    const quantityInput = row.querySelector('.quantity-input'); // Lấy ô nhập số lượng
+                    let quantity = parseInt(quantityInput.value); // Số lượng hiện tại
+
+                    // Tăng số lượng
+                    quantity += 1;
+                    quantityInput.value = quantity;
+
+                    // Cập nhật cột total
+                    const price = parseFloat(row.querySelector('.pro-price span').textContent.replace(/[^\d.-]/g, '')); // Lấy giá mà không có ký tự đặc biệt
+                    const total = price * quantity;
+
+                    // Định dạng lại total với dấu phân cách hàng nghìn theo chuẩn Việt Nam
+                    row.querySelector('.pro-subtotal span').textContent = total;
+                });
+            });
+
+            // Sự kiện cho nút giảm
+            document.querySelectorAll('.qty-btn.minus').forEach(button => {
+                button.addEventListener('click', function () {
+                    const row = this.closest('tr'); // Lấy hàng của sản phẩm
+                    const quantityInput = row.querySelector('.quantity-input'); // Lấy ô nhập số lượng
+                    let quantity = parseInt(quantityInput.value); // Số lượng hiện tại
+
+                    // Giảm số lượng nếu số lượng > 1
+                    if (quantity > 1) {
+                        quantity -= 1;
+                        quantityInput.value = quantity;
+
+                        // Cập nhật cột total
+                        const price = parseFloat(row.querySelector('.pro-price span').textContent.replace(/[^\d.-]/g, '')); // Lấy giá mà không có ký tự đặc biệt
+                        const total = price * quantity;
+
+                        // Định dạng lại total với dấu phân cách hàng nghìn theo chuẩn Việt Nam
+                        row.querySelector('.pro-subtotal span').textContent = total;
+                    }
+                });
+            });
+
+            // Sự kiện cho nút xóa
+            $('.remove-btn').click(function () {
+                const productId = $(this).data('product-id'); // Lấy productId từ thuộc tính data-product-id
+
+                // Gọi API để xóa sản phẩm khỏi giỏ hàng
+                const token = localStorage.getItem("jwtToken"); // Lấy token từ localStorage
+                $.ajax({
+                    url: `/api/cart/remove/${productId}`,  // API để xóa sản phẩm
+                    type: "DELETE",
+                    headers: {
+                        "Authorization": `Bearer ${token}`, // Thêm token vào header
+                        "Content-Type": "application/json",
+                    },
+                    success: function(response) {
+                        // Xóa sản phẩm khỏi giỏ hàng trên giao diện
+                        $(`[data-product-id="${productId}"]`).closest('tr').remove();
+                        $('#remove-success-alert').fadeIn().delay(3000).fadeOut();
+                        // Cập nhật lại tổng giỏ hàng
+                        updateCartTotals();
+                    },
+                    error: function(error) {
+                        console.error("Error removing product:", error);
+                    }
+                });
+            });
+
+            // Hàm cập nhật lại tổng giỏ hàng
+            function updateCartTotals() {
+                // Cập nhật lại các tổng số tiền trong giỏ hàng
+                const totalAmount = [...document.querySelectorAll('.pro-subtotal span')].reduce((total, subtotal) => {
+                    return total + parseFloat(subtotal.textContent.replace(/[^\d.-]/g, ''));
+                }, 0);
+
+                // Cập nhật lại tổng số tiền trên giao diện
+                $('#total-amount').text(totalAmount.toLocaleString('vi-VN') + ' VND');
+            }
+
+        }
+
+        function proceedToCheckout() {
+            // Thu thập thông tin sản phẩm từ giao diện
+            const cartItems = [];
+            $("tr[data-product-id]").each(function () {
+                // Get the product ID from the `data-product-id` attribute
+                const productId = $(this).data("product-id");
+
+                // Get the quantity from the input field with the class `quantity-input`
+                const quantity = parseInt($(this).find(".quantity-input").val());
+
+                // Ensure both `productId` and `quantity` are valid before adding to cart
+                if (productId && quantity > 0) {
+                    cartItems.push({
+                        productId: productId,
+                        quantity: quantity,
+                    });
+                }
+            });
+
+            console.log(cartItems)
+
+            if (cartItems.length === 0) {
+                alert("Giỏ hàng của bạn trống!");
+                return;
+            }
+
+            // Gửi dữ liệu đến API bằng AJAX
+            $.ajax({
+                url: "/api/orders/checkout",
+                type: "POST",
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                contentType: "application/json",
+                data: JSON.stringify(cartItems),
+                success: function (response) {
+                    localStorage.setItem("checkoutData", JSON.stringify(response));
+                    // Chuyển hướng sang trang /checkout với dữ liệu trả về
+                    window.location.href = `/checkout`;
+                },
+                error: function (xhr, status, error) {
+                    console.error("Lỗi:", error);
+                    alert("Có lỗi xảy ra khi xử lý!");
+                },
+            });
+        }
+
+    </script>
+
+</div>
+</html>

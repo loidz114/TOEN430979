@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout.html}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <style>
+        .notification {
+            display: none; /* Ẩn thông báo mặc định */
+            background-color: #4CAF50; /* Màu nền khi thành công */
+            color: white; /* Màu chữ trắng */
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 16px;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .notification.error {
+            background-color: #f44336; /* Màu nền khi có lỗi */
+        }
+
+        /* Đảm bảo .latest-product sử dụng đầy đủ chiều rộng của container */
+        .latest-product .container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Hiển thị sản phẩm theo hàng */
+        #product-container {
+            display: flex;
+            flex-wrap: wrap; /* Đảm bảo sản phẩm tự xuống dòng khi không đủ không gian */
+            justify-content: space-between; /* Căn đều các sản phẩm trong hàng */
+            gap: 20px; /* Khoảng cách giữa các sản phẩm */
+        }
+
+        /* Sản phẩm chiếm 20% chiều rộng trên màn hình lớn (5 sản phẩm mỗi hàng) */
+        .product-item {
+            flex: 0 0 calc(20% - 20px); /* Trừ khoảng cách để cân đối */
+            max-width: calc(20% - 20px);
+            margin-bottom: 20px; /* Khoảng cách dưới mỗi sản phẩm */
+            box-sizing: border-box; /* Tính cả padding và border vào kích thước tổng */
+        }
+
+        /* Điều chỉnh cho màn hình nhỏ hơn (2 cột trên màn hình vừa) */
+        @media (max-width: 768px) {
+            .product-item {
+                flex: 0 0 calc(50% - 20px); /* 2 cột, cân đối khoảng cách */
+                max-width: calc(50% - 20px);
+            }
+        }
+
+        /* Điều chỉnh cho màn hình cực nhỏ (1 cột trên điện thoại) */
+        @media (max-width: 480px) {
+            .product-item {
+                flex: 0 0 100%; /* 1 cột trên màn hình nhỏ */
+                max-width: 100%;
+            }
+        }
+
+        .product-thumb {
+            width: 100%; /* Đảm bảo khung hình chiếm toàn bộ chiều rộng */
+            height: 200px; /* Chiều cao cố định của khung chứa ảnh */
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Căn giữa ảnh */
+            overflow: hidden; /* Ẩn phần ảnh thừa */
+            background-color: #f9f9f9; /* Màu nền dự phòng nếu ảnh không tải được */
+        }
+
+        .product-thumb img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Đảm bảo ảnh luôn nằm gọn trong khung */
+        }
+
+
+    </style>
+    <!-- Thêm jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Thêm Bootstrap (cho tooltip) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="wrapper box-layout">
+        <div id="cart-notification" class="notification"></div>
+        <!-- hero slider start -->
+        <div class="hero-slider-area mb-5">
+            <div class="container">
+                <div class="slider-wrapper-area3">
+                    <div class="hero-slider-active hero__3 slick-dot-style hero-dot">
+                        <div class="single-slider d-flex align-items-center" style="background-image: url(/assets/img/slider/slider3_bg1.jpg);">
+                            <div class="container">
+                                <div class="slider-main-content">
+                                    <div class="slider-text">
+                                        <h2>our new range of</h2>
+                                        <h1>woman</h1>
+                                        <h5>for less than $199.00</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="single-slider d-flex align-items-center" style="background-image: url(/assets/img/slider/slider3_bg2.jpg);">
+                            <div class="container">
+                                <div class="slider-main-content">
+                                    <div class="slider-text">
+                                        <h2>shopping bag</h2>
+                                        <h4>fashion collection 2018</h4>
+                                        <p>for less than $199.00</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- hero slider end -->
+
+        <!-- latest product start-->
+        <div class="latest-product pt-md-30 pt-lg-30 pt-sm-30 mb-5">
+            <div class="container">
+                <div class="section-title mb-30">
+                    <div class="title-icon">
+                        <i class="fa fa-flash"></i>
+                    </div>
+                    <h3>Sản Phẩm Mới Nhất</h3>
+                </div>
+                <div class="row d-flex flex-wrap justify-content-start" id="product-container">
+                    <!-- Các sản phẩm sẽ được thêm vào đây qua JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- brand area start -->
+        <div class="brand-area pt-26 pb-30">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="section-title mb-30">
+                            <div class="title-icon">
+                                <i class="fa fa-crop"></i>
+                            </div>
+                            <h3>Popular Brand</h3>
+                        </div> <!-- section title end -->
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="brand-active slick-padding slick-arrow-style">
+                            <div class="brand-item text-center">
+                                <a href="#"><img src="/assets/img/brand/br1.png" alt=""></a>
+                            </div>
+                            <div class="brand-item text-center">
+                                <a href="#"><img src="/assets/img/brand/br2.png" alt=""></a>
+                            </div>
+                            <div class="brand-item text-center">
+                                <a href="#"><img src="/assets/img/brand/br3.png" alt=""></a>
+                            </div>
+                            <div class="brand-item text-center">
+                                <a href="#"><img src="/assets/img/brand/br4.png" alt=""></a>
+                            </div>
+                            <div class="brand-item text-center">
+                                <a href="#"><img src="/assets/img/brand/br5.png" alt=""></a>
+                            </div>
+                            <div class="brand-item text-center">
+                                <a href="#"><img src="/assets/img/brand/br6.png" alt=""></a>
+                            </div>
+                            <div class="brand-item text-center">
+                                <a href="#"><img src="/assets/img/brand/br4.png" alt=""></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- brand area end -->
+    </div>
+
+    <script>
+        // Hàm load danh sách sản phẩm
+        function loadProducts() {
+            $.ajax({
+                url: '/api/products/newest', // Đảm bảo URL này đúng
+                type: 'GET',
+                // headers: {
+                //     'Authorization': `Bearer ${token}`,
+                //     'Content-Type': 'application/json'
+                // },
+                success: function (products) {
+                    console.log('Dữ liệu sản phẩm trả về:', products);
+                    const productContainer = $('#product-container');
+                    productContainer.empty(); // Xóa nội dung cũ
+
+                    // Kiểm tra nếu không có sản phẩm
+                    if (!products || products.length === 0) {
+                        productContainer.append('<p>Không có sản phẩm nào để hiển thị.</p>');
+                        return;
+                    }
+
+                    // Lặp qua danh sách sản phẩm và hiển thị
+                    products.forEach((product) => {
+                        // Xử lý ảnh (nếu không có ảnh, sử dụng ảnh mặc định)
+                        const imageUrl = product.detail.images[0]?.imageUrl || '/images/default-image.jpg';
+
+                        // Tạo HTML cho từng sản phẩm
+                        const productHtml = `
+                    <div class="product-item fix product-custom">
+                        <div class="product-thumb">
+                            <a href="/product/${product.productID}">
+                                <img src="${imageUrl}" class="img-pri" alt="${product.name}">
+                            </a>
+                            <div class="product-action-link">
+
+                                <a href="#" class="add-to-cart" data-product-id="${product.productID}" data-toggle="tooltip" data-placement="left" title="Add to cart">
+                                <i class="fa fa-shopping-cart"></i>
+                            </a>
+                            </div>
+                        </div>
+                        <div class="product-content">
+                            <h4 style="height: 60px">
+                                <a href="/product/${product.productID}">${product.name}</a>
+                            </h4>
+                            <div class="pricebox">
+                                <span class="regular-price">${formatPrice(product.price)} đ</span>
+                            </div>
+                        </div>
+                    </div>`;
+                        productContainer.append(productHtml);
+                    });
+
+                    // Kích hoạt lại tooltip sau khi các sản phẩm được thêm
+                    $('[data-toggle="tooltip"]').tooltip();
+
+                    // Gắn sự kiện click cho nút Add to cart
+                    $('.add-to-cart').off('click').on('click', function (e) {
+                        e.preventDefault(); // Ngăn chặn hành vi mặc định
+                        const productId = $(this).data('product-id'); // Lấy ID sản phẩm
+                        addToCart(productId); // Gọi hàm thêm sản phẩm vào giỏ hàng
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.log("Error: ", error);
+                    console.log("Response Text: ", xhr.responseText); // Xem chi tiết lỗi trả về từ server
+                    alert('Đã có lỗi xảy ra khi thêm sản phẩm!');
+                }
+            });
+        }
+
+        // Hàm định dạng giá tiền (thêm dấu chấm phân cách hàng nghìn)
+        function formatPrice(price) {
+            return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        // Gọi hàm load sản phẩm khi trang được load
+        $(document).ready(function () {
+            loadProducts();
+        });
+
+        function addToCart(productId) {
+            // Gọi API thêm sản phẩm vào giỏ hàng
+            $.ajax({
+                url: '/api/cart/add',
+                type: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}` // Gửi token để xác định user
+                },
+                contentType: 'application/json',
+                data: JSON.stringify({ productId: productId, quantity: 1 }), // Gửi ID sản phẩm và số lượng (mặc định là 1)
+                success: function (response) {
+                    $('#cart-notification').removeClass('error').text('Sản phẩm đã được thêm vào giỏ hàng!').fadeIn().delay(3000).fadeOut();
+                },
+                error: function (xhr, status, error) {
+                    $('#cart-notification').addClass('error').text('Đã có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng!').fadeIn().delay(3000).fadeOut();
+                }
+            });
+        }
+
+
+    </script>
+
+</div>
+
+</body>
+
+</html>
