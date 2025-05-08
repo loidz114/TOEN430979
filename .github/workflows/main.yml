@@ -1,0 +1,15 @@
+    echo "Không tìm thấy trạng thái 'Done' trong danh sách transition."
+            fi
+          else
+            echo "Không tìm thấy ISSUE_KEY trong tiêu đề PR. Bỏ qua cập nhật Jira."
+          fi
+
+      - name: Notify Slack when Jira issue is closed
+        if: github.event.pull_request.merged == true
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{
+              \"text\": \"Jira issue liên quan đến PR *#${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}* đã được cập nhật sang trạng thái *Done*.\" 
+            }" \
+            ${{ secrets.SLACK_WEBHOOK_URL }} || echo "Slack notification failed"
+
