@@ -12,7 +12,7 @@ public class EmailDetail {
     private String recipient;
     private String msgBody;
     private String subject;
-    //cmt
+    //cmtda
     private String attachment;
     
 }
