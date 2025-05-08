@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class RateRequest {
     private Long productId;         // ID sản phẩm
-    private Long userId;            // ID người dùng
+    private Long userId;            // ID người dùngg
     private String content;         // Nội dung đánh giá
     private int rate;
 }
