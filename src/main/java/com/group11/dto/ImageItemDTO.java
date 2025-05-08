@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class ImageItemDTO {
-    a
+    //a
     private String imageUrl;
 }
